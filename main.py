@@ -86,8 +86,8 @@ def parse():
             except:
                 return 'The posted dates do not match the date format.'
             desc = line[columnIndices[1]]
-            debit = tryFloat(line[columnIndices[2]])
-            credit = tryFloat(line[columnIndices[3]])
+            debit = abs(tryFloat(line[columnIndices[2]]))
+            credit = abs(tryFloat(line[columnIndices[3]]))
 
             # Categorize by period
             index = -1
@@ -262,7 +262,7 @@ def main():
         ], [
             sg.Text("Has Header:", tooltip='Check to ignore the first line.'),
             sg.Checkbox('', enable_events=True, default=s['HasHeader'], key='HasHeader'),
-            sg.Text("Positive Debits:", tooltip='Check if debits are positive additions to the account balance.'),
+            sg.Text("Credit card:", tooltip='Check if debits are positive additions to the account balance.\nThis is usually the case with credit cards.'),
             sg.Checkbox('', enable_events=True, default=s['PositiveDebits'], key='PositiveDebits'),
             sg.Text("Sort by Description:", tooltip='Sort line items alphabetically by description.\nIf not, sort by date.'),
             sg.Checkbox('', enable_events=True, default=s['SortDesc'], key='SortDesc'),
