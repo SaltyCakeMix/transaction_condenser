@@ -29,7 +29,7 @@ def stringSimilar(a, b):
     conf += SequenceMatcher(None, a, b).ratio() * 0.75
     return conf > 0.5
 
-def defaultSettings():
+def defaultSettings(settings):
     settings['In'] = './input.csv'
     settings['Out'] = './output.xlsx'
     settings['Columns'] = {'Post': 'B', 'Description': 'D', 'Debit': 'F', 'Credit': 'G'}
@@ -46,7 +46,7 @@ def tryFloat(input):
     except:
         return 0
 
-def parse():
+def parse(settings):
     # Checks if data are proper parameters
     columnIndices = []
     for c in settings['Columns'].values():
@@ -213,7 +213,7 @@ def main():
     exists = os.path.isfile(settingsPath)
     settings = sg.UserSettings(filename=settingsPath, path='.')
     if not exists:
-        defaultSettings()
+        defaultSettings(settings)
 
     # Formats input window
     rows = []
@@ -299,7 +299,7 @@ def main():
         elif event == 'Run':
             window['IO'].update(f'Running...')
             window.refresh()
-            msg = parse()
+            msg = parse(settings)
             if msg:
                 window['IO'].update(f'ERROR: {msg}')
             else:

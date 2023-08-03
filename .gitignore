@@ -3,3 +3,4 @@ AccountHistory.csv
 output.xlsx
 settings.json
 main.spec
+dist/
