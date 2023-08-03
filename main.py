@@ -30,15 +30,15 @@ def stringSimilar(a, b):
     return conf > 0.5
 
 def defaultSettings():
-    s['In'] = './input.csv'
-    s['Out'] = './output.xlsx'
-    s['Columns'] = {'Post': 'B', 'Description': 'D', 'Debit': 'F', 'Credit': 'G'}
-    s['HasHeader'] = True
-    s['Periods'] = []
-    s['DateFormat'] = '%Y %m %d'
-    s['Exclusions'] = ''
-    s['PositiveDebits'] = False
-    s['SortDesc'] = False
+    settings['In'] = './input.csv'
+    settings['Out'] = './output.xlsx'
+    settings['Columns'] = {'Post': 'B', 'Description': 'D', 'Debit': 'F', 'Credit': 'G'}
+    settings['HasHeader'] = True
+    settings['Periods'] = []
+    settings['DateFormat'] = '%Y %m %d'
+    settings['Exclusions'] = ''
+    settings['PositiveDebits'] = False
+    settings['SortDesc'] = False
 
 def tryFloat(input):
     try:
@@ -49,12 +49,12 @@ def tryFloat(input):
 def parse():
     # Checks if data are proper parameters
     columnIndices = []
-    for c in s['Columns'].values():
+    for c in settings['Columns'].values():
         columnIndices.append(ord(c) - ord('A'))
-    if not os.path.isfile(s['In']):
+    if not os.path.isfile(settings['In']):
         return 'Cannot find the input file.'
     periods = []
-    for period in s['Periods']:
+    for period in settings['Periods']:
         try:
             start = datetime.strptime(period[0], '%Y-%m-%d')
         except:
@@ -69,20 +69,20 @@ def parse():
 
     # Reads and parses the raw data
     bigList = [{'Debit': {}, 'Credit': {}} for i in periods]
-    with open(s['In']) as f:
+    with open(settings['In']) as f:
         file = [line for line in csv.reader(f)]
-    testLine = file[1 if s['HasHeader'] else 0]
-    for letter, index in zip(s['Columns'].values(), columnIndices):
+    testLine = file[1 if settings['HasHeader'] else 0]
+    for letter, index in zip(settings['Columns'].values(), columnIndices):
         if index < 0:
             return f'{letter} could not be interpreted as a real column.'
         if len(testLine) <= index:
             return f'Could not find the {letter} column.'
 
-    excludeWords = [word.strip() for word in s['Exclusions'].lower().split(',') if word and not word.isspace()]
-    for line in file[1 if s['HasHeader'] else 0:]:
+    excludeWords = [word.strip() for word in settings['Exclusions'].lower().split(',') if word and not word.isspace()]
+    for line in file[1 if settings['HasHeader'] else 0:]:
         if len(line) > 1:
             try:
-                date = datetime.strptime(re.sub('[-/:;]', ' ', line[columnIndices[0]]), s['DateFormat'])
+                date = datetime.strptime(re.sub('[-/:;]', ' ', line[columnIndices[0]]), settings['DateFormat'])
             except:
                 return 'The posted dates do not match the date format.'
             desc = line[columnIndices[1]]
@@ -152,11 +152,11 @@ def parse():
                 endBound += len(row) - 1
         ws.append([f'{periods[i][0].strftime("%b %d, %Y")} - {periods[i][1].strftime("%b %d, %Y")}\n'])
         ws.append(['Previous Balance', 0 if anchor == -1 else f'=B{anchor}'])
-        ws.append(['Total Debits', f'={"" if s["PositiveDebits"] else "-"}SUM(C{startBound}:C{endBound})'])
-        ws.append(['Total Credits', f'={"-" if s["PositiveDebits"] else ""}SUM(D{startBound}:D{endBound})'])
+        ws.append(['Total Debits', f'={"" if settings["PositiveDebits"] else "-"}SUM(C{startBound}:C{endBound})'])
+        ws.append(['Total Credits', f'={"-" if settings["PositiveDebits"] else ""}SUM(D{startBound}:D{endBound})'])
         ws.append(['New Balance', f'=SUM(B{lineNumber + 1}:B{lineNumber + 3})'])
         ws.append(header)
-        if s['SortDesc']:
+        if settings['SortDesc']:
             cList = [value for key,value in sorted(creditList['Credit'].items())]
             dList = [value for key,value in sorted(creditList['Debit'].items())]
         else:
@@ -182,7 +182,7 @@ def parse():
         anchor = lineNumber + 4
         lineNumber = endBound + 2
     try:
-        wb.save(s['Out'])
+        wb.save(settings['Out'])
     except:
         return 'Output file is currently open.'
     return ''
@@ -211,7 +211,7 @@ def createRow(rowCounter, start, end):
 def main():
     # Loads inputs
     exists = os.path.isfile(settingsPath)
-    s = sg.UserSettings(filename=settingsPath, path='.')
+    settings = sg.UserSettings(filename=settingsPath, path='.')
     if not exists:
         defaultSettings()
 
@@ -219,7 +219,7 @@ def main():
     rows = []
     indices = []
     rowCounter = 0
-    for period in s['Periods']:
+    for period in settings['Periods']:
         rows.append(createRow(rowCounter, period[0], period[1]))
         indices.append(rowCounter)
         rowCounter += 1
@@ -238,34 +238,34 @@ def main():
             ]),
             sg.Column([
                 [
-                    sg.In(enable_events=True, key="In", default_text=s['In']),
+                    sg.In(enable_events=True, key="In", default_text=settings['In']),
                     sg.FileBrowse(file_types=(("Comma Delimited", "*.csv"),), initial_folder='./'),
                 ], [
-                    sg.In(enable_events=True, key="Out", default_text=s['Out']),
+                    sg.In(enable_events=True, key="Out", default_text=settings['Out']),
                     sg.FileSaveAs(file_types=(("Excel File", "*.xlsx"),), initial_folder='./'),
                 ], [
-                    sg.In(enable_events=True, key="Exclusions", default_text=s['Exclusions']),
+                    sg.In(enable_events=True, key="Exclusions", default_text=settings['Exclusions']),
                 ], [
                     sg.Combo(['%Y %m %d', '%d %m %Y', '%m %d %Y'],
-                                enable_events=True, key="DateFormat", default_value=s['DateFormat'], size=(10, 1)),
+                                enable_events=True, key="DateFormat", default_value=settings['DateFormat'], size=(10, 1)),
                 ]
             ])
         ], [
             sg.Text("Post Date Column:"),
-            sg.Combo(uppercase, enable_events=True, default_value=s['Columns']['Post'], key='Post'),
+            sg.Combo(uppercase, enable_events=True, default_value=settings['Columns']['Post'], key='Post'),
             sg.Text("Description Column:"),
-            sg.Combo(uppercase, enable_events=True, default_value=s['Columns']['Description'], key='Description'),
+            sg.Combo(uppercase, enable_events=True, default_value=settings['Columns']['Description'], key='Description'),
             sg.Text("Debit Column:"),
-            sg.Combo(uppercase, enable_events=True, default_value=s['Columns']['Debit'], key='Debit'),
+            sg.Combo(uppercase, enable_events=True, default_value=settings['Columns']['Debit'], key='Debit'),
             sg.Text("Credit Column:"),
-            sg.Combo(uppercase, enable_events=True, default_value=s['Columns']['Credit'], key='Credit'),
+            sg.Combo(uppercase, enable_events=True, default_value=settings['Columns']['Credit'], key='Credit'),
         ], [
             sg.Text("Has Header:", tooltip='Check to ignore the first line.'),
-            sg.Checkbox('', enable_events=True, default=s['HasHeader'], key='HasHeader'),
+            sg.Checkbox('', enable_events=True, default=settings['HasHeader'], key='HasHeader'),
             sg.Text("Credit card:", tooltip='Check if debits are positive additions to the account balance.\nThis is usually the case with credit cards.'),
-            sg.Checkbox('', enable_events=True, default=s['PositiveDebits'], key='PositiveDebits'),
+            sg.Checkbox('', enable_events=True, default=settings['PositiveDebits'], key='PositiveDebits'),
             sg.Text("Sort by Description:", tooltip='Sort line items alphabetically by description.\nIf not, sort by date.'),
-            sg.Checkbox('', enable_events=True, default=s['SortDesc'], key='SortDesc'),
+            sg.Checkbox('', enable_events=True, default=settings['SortDesc'], key='SortDesc'),
         ], [
             sg.Column(rows, key='RowPanel', scrollable = True, vertical_scroll_only = True, justification='center', size=(1000, 400))
         ], [
@@ -282,7 +282,7 @@ def main():
                         font='Helvetica 15')
 
     def manualSave():
-        s.save(filename=settingsPath, path='./')
+        settings.save(filename=settingsPath, path='./')
 
     # Create an event loop
     while True:
@@ -290,11 +290,11 @@ def main():
 
         if event in ['In', 'Out', 'DateFormat', 'HasHeader', 'Exclusions', 'PositiveDebits', 'SortDesc']:
             if isinstance(values[event], str):
-                s[event] = values[event].strip()
+                settings[event] = values[event].strip()
             else:
-                s[event] = values[event]
+                settings[event] = values[event]
         elif event in ['Post', 'Description', 'Debit', 'Credit']:
-            s['Columns'][event] = values[event].strip()
+            settings['Columns'][event] = values[event].strip()
             manualSave()
         elif event == 'Run':
             window['IO'].update(f'Running...')
@@ -308,8 +308,8 @@ def main():
             break
         elif event == 'Add Date Range':
             try:
-                start = datetime.strptime(s['Periods'][-1][0], '%Y-%m-%d') + relativedelta(months=1)
-                b = datetime.strptime(s['Periods'][-1][1], '%Y-%m-%d')
+                start = datetime.strptime(settings['Periods'][-1][0], '%Y-%m-%d') + relativedelta(months=1)
+                b = datetime.strptime(settings['Periods'][-1][1], '%Y-%m-%d')
                 end = b + relativedelta(months=1)
                 if b.month != (b + timedelta(days=1)).month: # Check if last day of month
                     end += relativedelta(day=31)
@@ -320,7 +320,7 @@ def main():
                 start = defaultStart
                 end = defaultEnd
             window.extend_layout(window['RowPanel'], [createRow(rowCounter, start, end)])
-            s['Periods'].append([start, end])
+            settings['Periods'].append([start, end])
             manualSave()
             indices.append(rowCounter)
             rowCounter += 1
@@ -329,7 +329,7 @@ def main():
             window['IO'].update('Successfully added a date range.')
         elif event[0] == 'Delete':
             window[('Row', event[1])].update(visible=False)
-            del s['Periods'][indices.index(event[1])]
+            del settings['Periods'][indices.index(event[1])]
             manualSave()
             indices.remove(event[1])
             window.refresh()
@@ -340,10 +340,10 @@ def main():
             newDate = values[(event[0], event[1])].strip()
             try:
                 newTuple = [int(x) for x in newDate.split('-')]
-                window[(f'C{event[0]}', event[1])].-calendar_default_date_M_D_Y = (newTuple[1], newTuple[2], newTuple[0])
+                window[(f'C{event[0]}', event[1])].calendar_default_date_M_D_Y = (newTuple[1], newTuple[2], newTuple[0])
             except:
                 pass
-            s['Periods'][i][event[0] != 'Start'] = newDate
+            settings['Periods'][i][event[0] != 'Start'] = newDate
             manualSave()
     window.close()
 
